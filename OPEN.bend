@@ -3,6 +3,8 @@ import ./src/byte.bend as B
 import ./src/lz.bend as LZ
 import ./src/codec.bend as Codec
 import ./src/fast.bend as F
+import ./src/png.bend as P
+import ./src/image.bend as Img
 
 # Claims this project relies on but has NOT proven. They are kept out of
 # LAWS.bend so that `bend PROOF.bend` stays an honest gate; `bend
@@ -39,3 +41,13 @@ law fast_roundtrip:
 law fast_is_reference_format:
   for +xs: List<&2, U32>
   {Codec.decomp_chunk(B.decode(F.compress_chunk(xs))) == B.decode(xs) : B.Bytes()}
+
+# The image codec: a decoded image, encoded to .bzi and decoded again,
+# gives exactly the PAM file of its pixels (for a palette image, the
+# colours its palette gives).
+# Tested by: every PNG and WebP case at 1 and 16 threads, compared with
+# PIL, ffmpeg and a spec-level Python decoder (see README).
+law image_roundtrip:
+  for im: P.IM
+  {Img.bytes_of(Img.decode(Img.encode(im, True{}), True{})) ==
+    Img.bytes_of(Img.pam(im)) : List<&2, U32>}

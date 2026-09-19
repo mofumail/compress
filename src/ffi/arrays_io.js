@@ -52,3 +52,16 @@ export function write_arrays(file, xs) {
   writeSync(file, Buffer.from(out));
   return [file, { $: "Done", value: { $: "Unit" } }];
 }
+
+export function read_records(file, max, skip, rhdr) {
+  const b = readAll(file, Number(max)), out = [];
+  skip = Number(skip); rhdr = Number(rhdr);
+  out.push(arr(b.subarray(0, Math.min(skip, b.length))));
+  for (let o = skip; rhdr >= 4 && o + rhdr <= b.length;) {
+    let len = rhdr + b.readUInt32BE(o);
+    if (o + len > b.length) len = b.length - o;
+    out.push(arr(b.subarray(o, o + len)));
+    o += len;
+  }
+  return [file, { $: "Done", value: list(out) }];
+}

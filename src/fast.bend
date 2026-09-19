@@ -320,14 +320,15 @@ def ps.c(head: A(), tok: A(), freq: A(), t: A(), +n: U32, +pos: U32,
     case CS{w, prev, p, m, c, +best, live}:
       ps.d(lt(2, blen(best)), w, head, prev, tok, freq, t, n, pos, nt, best)
 
-def ps.b(tok: A(), freq: A(), t: A(), +n: U32, +pos: U32, +nt: U32,
+def ps.b(+chain: Nat, tok: A(), freq: A(), t: A(), +n: U32, +pos: U32, +nt: U32,
   h: HS) -> PS:
   match h:
     case HS{w, head, prev, +cand}:
       ps.c(head, tok, freq, t, n, pos, nt,
-        cs.loop(CHAIN(), CS{w, prev, pos, n, cand, 0, cs.live(pos, cand, 0)}))
+        cs.loop(chain, CS{w, prev, pos, n, cand, 0, cs.live(pos, cand, 0)}))
 
-def ps.loop(f: Nat, s: PS) -> PS:
+# `chain`: how many candidates to try per position (see CHAIN)
+def ps.loop(f: Nat, +chain: Nat, s: PS) -> PS:
   match f:
     case 0n:
       s
@@ -338,7 +339,7 @@ def ps.loop(f: Nat, s: PS) -> PS:
             case False{}:
               PS{w, head, prev, tok, freq, t, n, pos, nt, False{}}
             case True{}:
-              ps.loop(g, ps.b(tok, freq, t, n, pos, nt,
+              ps.loop(g, chain, ps.b(chain, tok, freq, t, n, pos, nt,
                 insert(w, head, prev, pos)))
 
 # The smallest d with 2^d >= n (at least 1).
@@ -1210,10 +1211,13 @@ def tops(xs: List<&2, U32>) -> List<&2, U32>:
     case Con{+x, r}:
       Con{(x >> 24n : U32), tops(r)}
 
-def parse_arr(w: A(), +n: U32) -> PS:
+def parse_chain(w: A(), +n: U32, +chain: Nat) -> PS:
   +d = depth(32n, 1n, n)
-  ps.loop(U32.to_nat(n), PS{w, Array.new(U32, 15n, 0), Array.new(U32, 15n, 0),
+  ps.loop(U32.to_nat(n), chain, PS{w, Array.new(U32, 15n, 0), Array.new(U32, 15n, 0),
     Array.new(U32, d, 0), Array.new(U32, 9n, 0), tables(), n, 0, 0, lt(0, n)})
+
+def parse_arr(w: A(), +n: U32) -> PS:
+  parse_chain(w, n, CHAIN())
 
 def ca.out(+cap: U32, +lens: List<&2, U32>, +bits: U32, w: W) -> A():
   match w:
@@ -1284,6 +1288,18 @@ def da.b(pr: A() & U32) -> A():
 # One chunk's container record in, its bytes out.
 def decompress_arr(p: A()) -> A():
   da.b(arr_len(p))
+
+# an empty packed array with room for `len` bytes and the count slot
+def new_packed(+len: U32) -> A():
+  Array.new(U32, depth(32n, 1n, ((len >> 2n : U32) + 2 : U32)), 0)
+
+# store the byte count in the last slot
+def pack_cap.b(+len: U32, pr: A() & U32) -> A():
+  (a, +size) = pr
+  Array.set(U32, a, (size - 1 : U32), len)
+
+def pack_cap(a: A(), +len: U32) -> A():
+  pack_cap.b(len, Array.size(U32, a))
 
 # ------------------------------------------------ list adapters (tests)
 

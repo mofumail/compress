@@ -135,12 +135,12 @@ static void arrays_nothing(IoWork* w) {
 
 #endif
 
-// read_blob_arrays(file, max): a .bz container, one block per chunk.
-// Container: "BZ77", depth (1 byte), then per chunk
-// nbytes (4, big-endian) | nbits (4) | 320 code lengths | nbytes payload.
-// The file is read once; the chunk records are copied into their blocks
-// in parallel.
-static void read_blob_arrays_call(IoWork* w) {
+// read_records(file, max, skip, rhdr): a file made of a `skip`-byte
+// header and then records, each `rhdr` bytes of header whose first four
+// hold the payload length (big-endian), followed by the payload. The
+// result is the header, then one block per record. The file is read
+// once; the records are copied into their blocks in parallel.
+static void read_records_call(IoWork* w) {
   int     fd  = (int)w->hand;
   u64     got = 0;
   ssize_t n   = 1;
@@ -153,16 +153,19 @@ static void read_blob_arrays_call(IoWork* w) {
   w->size = io_sys_end(w, n < 0 ? n : (ssize_t)got);
 }
 
-static Term read_blob_arrays_pack(Env e, IoWork* w) {
+static Term read_records_pack(Env e, IoWork* w) {
   Term xs  = term_pak(CID_NIL, 0);
   u32  err = w->code;
   if (!err) {
     const uint8_t* p    = (uint8_t*)w->data;
     u64            n    = w->size;
-    u64            cap  = 16, cnt = 0;
+    u64            skip = (u64)w->made >> 32;
+    u64            rhdr = (u64)w->made & 0xFFFFFFFF;
+    u64            cap  = 16, cnt = 1;
     ArrJob*        jobs = io_mem(calloc(cap, sizeof(ArrJob)));
-    for (u64 o = 5; o + 328 <= n;) {
-      u64 len = 328 + ((u64)p[o] << 24 | (u64)p[o + 1] << 16
+    jobs[0] = (ArrJob){ p, NULL, skip < n ? skip : n, 0, 0, -1, 0, NULL };
+    for (u64 o = skip; rhdr >= 4 && o + rhdr <= n;) {
+      u64 len = rhdr + ((u64)p[o] << 24 | (u64)p[o + 1] << 16
         | (u64)p[o + 2] << 8 | p[o + 3]);
       if (o + len > n) {
         len = n - o;
@@ -183,13 +186,14 @@ static Term read_blob_arrays_pack(Env e, IoWork* w) {
   return io_tup(e, io_hand(w->hand), r);
 }
 
-Term read_blob_arrays_run(Env e, Term* f, IoWork* w) {
+Term read_records_run(Env e, Term* f, IoWork* w) {
   w->hand = (intptr_t)io_hand_v(f[0]);
   w->word = f[1] < INT32_MAX ? (u32)f[1] : INT32_MAX;
+  w->made = (intptr_t)(((u64)(u32)f[2] << 32) | (u32)f[3]);
   w->data = io_mem(malloc((u64)w->word + 1));
-  return io_work(w, read_blob_arrays_call, read_blob_arrays_pack);
+  return io_work(w, read_records_call, read_records_pack);
 }
 
-static void __attribute__((constructor)) read_blob_arrays_use(void) {
-  io_eff(CID_READ_BLOB_ARRAYS, read_blob_arrays_run, 0);
+static void __attribute__((constructor)) read_records_use(void) {
+  io_eff(CID_READ_RECORDS, read_records_run, 0);
 }

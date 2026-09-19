@@ -6,6 +6,7 @@ import ./src/lz.bend as LZ
 import ./src/chunks.bend as Chunks
 import ./src/codec.bend as Codec
 import ./src/atree.bend as T
+import ./src/image.bend as Img
 
 # =====================================================================
 # What this codec promises
@@ -142,6 +143,36 @@ law fast_par:
 law fast_par_dec:
   for t: T.AT
   {T.tdec(t) == T.tdec_seq(t) : T.AT}
+
+# The image codec (src/image.bend) runs four parallel maps over its strip
+# tree: filter and parse, encode, decode, and decode with a palette.
+
+law img_par_a:
+  for t: T.AT
+  for +rb: U32
+  for +bpp: U32
+  for +none: Bool
+  {Img.map_a(t, rb, bpp, none) == Img.map_a_seq(t, rb, bpp, none) : T.AT}
+
+law img_par_c:
+  for t: T.AT
+  for +lens: List<&2, U32>
+  {Img.map_c(t, lens) == Img.map_c_seq(t, lens) : T.AT}
+
+law img_par_d:
+  for t: T.AT
+  for +lens: List<&2, U32>
+  for +rb: U32
+  for +bpp: U32
+  {Img.map_d(t, lens, rb, bpp) == Img.map_d_seq(t, lens, rb, bpp) : T.AT}
+
+law img_par_dp:
+  for t: T.AT
+  for +lens: List<&2, U32>
+  for +w: U32
+  for +pal: List<&2, U32>
+  for +pch: U32
+  {Img.map_dp(t, lens, w, pal, pch) == Img.map_dp_seq(t, lens, w, pal, pch) : T.AT}
 
 # ---------------------------------------------------------------------
 # 7. Back-references. A `Ref{d, l}` emits exactly `l` bytes, whatever

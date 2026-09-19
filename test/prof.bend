@@ -54,11 +54,11 @@ def st0(pr: Array<U32> & U32) -> U32:
 
 def st1(pr: Array<U32> & U32) -> U32:
   (w, +n) = pr
-  nt_of(F.parse_arr(w, n))
+  nt_of(F.parse_arr(F.win(w, n), n))
 
 def st2(pr: Array<U32> & U32) -> U32:
   (w, +n) = pr
-  lens_of(F.parse_arr(w, n))
+  lens_of(F.parse_arr(F.win(w, n), n))
 
 def stage(p: Nat, w: Array<U32>) -> U32:
   match p:

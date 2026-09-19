@@ -1,5 +1,6 @@
-// The common block below is repeated in read_arrays.c, read_blob_arrays.c
-// and write_arrays.c under one guard, so each effect also compiles alone.
+// The common block below is repeated in read_arrays.c, read_blob_arrays.c,
+// read_records.c and write_arrays.c under one guard, so each effect also
+// compiles alone.
 #ifndef BZ_ARRAYS_COMMON
 #define BZ_ARRAYS_COMMON
 

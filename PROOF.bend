@@ -6,6 +6,7 @@ import ./src/lz.bend as LZ
 import ./src/chunks.bend as Chunks
 import ./src/codec.bend as Codec
 import ./src/atree.bend as T
+import ./src/image.bend as Img
 import ./LAWS.bend as Laws
 
 # Proofs of the claims in LAWS.bend. `bend PROOF.bend` is the gate: it
@@ -721,6 +722,50 @@ def Laws.fast_par_dec(t):
         T.ANd{_, T.tdec_seq(hi)} : T.AT}
       %Laws.fast_par_dec(hi) : {T.ANd{T.tdec(lo), T.tdec(hi)} ==
         T.ANd{T.tdec(lo), _} : T.AT}
+      {==}
+
+def Laws.img_par_a(t, rb, bpp, none):
+  match t:
+    case T.ALf{a}:
+      {==}
+    case T.ANd{lo, hi}:
+      %Laws.img_par_a(lo, rb, bpp, none) : {T.ANd{Img.map_a(lo, rb, bpp, none),
+        Img.map_a(hi, rb, bpp, none)} == T.ANd{_, Img.map_a_seq(hi, rb, bpp, none)} : T.AT}
+      %Laws.img_par_a(hi, rb, bpp, none) : {T.ANd{Img.map_a(lo, rb, bpp, none),
+        Img.map_a(hi, rb, bpp, none)} == T.ANd{Img.map_a(lo, rb, bpp, none), _} : T.AT}
+      {==}
+
+def Laws.img_par_c(t, lens):
+  match t:
+    case T.ALf{a}:
+      {==}
+    case T.ANd{lo, hi}:
+      %Laws.img_par_c(lo, lens) : {T.ANd{Img.map_c(lo, lens), Img.map_c(hi, lens)} ==
+        T.ANd{_, Img.map_c_seq(hi, lens)} : T.AT}
+      %Laws.img_par_c(hi, lens) : {T.ANd{Img.map_c(lo, lens), Img.map_c(hi, lens)} ==
+        T.ANd{Img.map_c(lo, lens), _} : T.AT}
+      {==}
+
+def Laws.img_par_d(t, lens, rb, bpp):
+  match t:
+    case T.ALf{a}:
+      {==}
+    case T.ANd{lo, hi}:
+      %Laws.img_par_d(lo, lens, rb, bpp) : {T.ANd{Img.map_d(lo, lens, rb, bpp),
+        Img.map_d(hi, lens, rb, bpp)} == T.ANd{_, Img.map_d_seq(hi, lens, rb, bpp)} : T.AT}
+      %Laws.img_par_d(hi, lens, rb, bpp) : {T.ANd{Img.map_d(lo, lens, rb, bpp),
+        Img.map_d(hi, lens, rb, bpp)} == T.ANd{Img.map_d(lo, lens, rb, bpp), _} : T.AT}
+      {==}
+
+def Laws.img_par_dp(t, lens, w, pal, pch):
+  match t:
+    case T.ALf{a}:
+      {==}
+    case T.ANd{lo, hi}:
+      %Laws.img_par_dp(lo, lens, w, pal, pch) : {T.ANd{Img.map_dp(lo, lens, w, pal, pch),
+        Img.map_dp(hi, lens, w, pal, pch)} == T.ANd{_, Img.map_dp_seq(hi, lens, w, pal, pch)} : T.AT}
+      %Laws.img_par_dp(hi, lens, w, pal, pch) : {T.ANd{Img.map_dp(lo, lens, w, pal, pch),
+        Img.map_dp(hi, lens, w, pal, pch)} == T.ANd{Img.map_dp(lo, lens, w, pal, pch), _} : T.AT}
       {==}
 
 # --------------------------------------------- 7. back-references
